@@ -1,0 +1,174 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document: default
+---
+
+**Principles of Data Visualization and Introduction to ggplot2**
+
+I have provided you with data about the 5,000 fastest growing companies in the US, as compiled by Inc. magazine. lets read this in:
+
+```{r}
+library(ggplot2)
+library(dplyr)
+inc <- read.csv("https://raw.githubusercontent.com/charleyferrari/CUNY_DATA_608/master/module1/Data/inc5000_data.csv", header= TRUE)
+
+```
+
+And lets preview this data:
+
+```{r}
+
+head(inc)
+
+```
+
+```{r}
+
+summary(inc)
+
+```
+
+Think a bit on what these summaries mean. Use the space below to add some more relevant non-visual exploratory information you think helps you understand this data:
+
+A little bit of extra exploration is make easier to read names of the columns and understand the number of rows in the dataset
+
+```{r}
+
+# Insert your code here, create more chunks as necessary
+names(inc)
+nrow(inc)
+```
+
+Another important is understand where missing values are located since they might affect or skew our visualizations
+```{r naf}
+
+colSums(is.na(inc))
+sum(is.na(inc$Employees))
+```
+
+## Question 1
+
+Create a graph that shows the distribution of companies in the dataset by State (ie how many are in each state). There are a lot of States, so consider which axis you should use. This visualization is ultimately going to be consumed on a 'portrait' oriented screen (ie taller than wide), which should further guide your layout choices.
+
+```{r}
+library(Hmisc)
+# Answer Question 1 here
+qrtile <- inc %>% count(State) %>% arrange(desc(n))
+qrtile <- qrtile %>%  mutate(quant = cut2(qrtile$n,quantile(qrtile$n, include.lowest=TRUE)))
+# https://stackoverflow.com/questions/11728419/using-cut-and-quartile-to-generate-breaks-in-r-function
+ggplot(qrtile, aes(x = reorder(State, n), y = n)) + 
+  geom_bar(aes(fill = quant), color="black", stat = "identity") + 
+  coord_flip() +
+  ggtitle("States with the Fastest Growing Companies") +
+  labs(y= NULL, x = NULL) +
+  scale_fill_discrete(name = "Quantile Groups") +
+  theme(legend.position="bottom") 
+
+```
+
+## Question 2
+
+Lets dig in on the state with the 3rd most companies in the data set. Imagine you work for the state and are interested in how many people are employed by companies in different industries. Create a plot that shows the average and/or median employment by industry for companies in this state (only use cases with full data, use R's `complete.cases()` function.) In addition to this, your graph should show how variable the ranges are, and you should deal with outliers.
+
+```{r}
+
+# Answer Question 2 here
+#Wjo is the third state?
+qrtile$State[3]
+
+
+ny <- inc %>% 
+  mutate(cases = complete.cases(inc)) %>% 
+  filter(cases=="TRUE") %>% 
+  filter(State == "NY") %>%
+  #looks to see if values are more than 2 standard deviations from the mean.I take care of outliers
+  filter(!(abs(Employees - mean(Employees)) > 2*sd(Employees))) %>%
+  group_by(Industry)%>%
+  #Find the mean and standard error
+  summarise(mean = mean(Employees), 
+            n = length(Industry),
+            se = sd(Employees)/sqrt(n))
+
+
+
+# Take a look at the outliers we eliminated
+test <- inc %>%
+  mutate(cases = complete.cases(inc)) %>% 
+  filter(cases=="TRUE") %>% 
+  filter(State == "NY") %>%
+  arrange(desc(Employees))
+
+
+ggplot(ny, aes(x = reorder(Industry, mean), y = mean)) + 
+  geom_bar(fill = "Lightblue", color="black", stat = "identity") + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.6) +
+  ggtitle("Average # of Employees per Company by Industry") +
+  labs(y= NULL, x = NULL) +
+  guides(fill=FALSE) +
+  coord_flip()
+
+
+#####################################################
+library(scales)
+qtile2<-inc %>% 
+  filter (State == "NY")
+
+head(qtile2)
+qtile2 <- qtile2[complete.cases(qtile2$Industry), ]
+qtile2 <- qtile2[complete.cases(qtile2$Employees), ]
+ny_median<-median(qtile2$Employees)
+
+lower <- min(qtile2$Employees)
+upper <- max(qtile2$Employees)
+
+qtile2_test<-ggplot(qtile2, aes(reorder(Industry, Employees, FUN=median), Employees)) + 
+    geom_boxplot(outlier.shape = NA,  color = "black", fill = "red", alpha = 0.5) +
+    scale_y_continuous(trans = log2_trans(), limits = c(lower, upper)) +
+    geom_hline(yintercept = ny_median, color="blue") +
+    geom_text(aes(2.5,400,label = "NY State median of employees"), size = 3)+
+    coord_flip() +
+    ggtitle ("NY: Number Of Employess By Industry") + ylab("Number Of Employees")+
+    theme_bw()+
+    theme(axis.title.y=element_blank())+
+    theme(text = element_text(size = 9, color = "black"))
+
+qtile2_test
+
+```
+
+## Question 3
+
+Now imagine you work for an investor and want to see which industries generate the most revenue per employee. Create a chart that makes this information clear. Once again, the distribution per industry should be shown.
+
+```{r}
+
+# Answer Question 3 here
+
+rev <- inc %>% 
+  mutate(cases = complete.cases(inc)) %>% 
+  filter(cases=="TRUE") %>% 
+  mutate(rev_emp = Revenue/Employees) %>%
+  #looks to see if values are more than 2 standard deviations from the mean. 
+  filter(!(abs(rev_emp - mean(rev_emp)) > 2*sd(rev_emp))) %>%
+  group_by(Industry)%>%
+  #Find the mean and standard error
+  summarise(Revenue_Employee = sum(Revenue)/sum(Employees),
+            n = length(Industry),
+            se = sd(Revenue/Employees)/sqrt(n))
+
+
+ggplot(rev, aes(x = reorder(Industry, Revenue_Employee), y = Revenue_Employee)) + 
+  geom_bar(fill = "lightblue", color="black", stat = "identity") + 
+  geom_errorbar(aes(ymin=Revenue_Employee-se, ymax=Revenue_Employee+se), width=0.6) +
+  ggtitle("Average Revenue per Employee by Industry") +
+  labs(y= NULL, x = NULL) +
+  guides(fill=FALSE) +
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip()
+
+```
+
+
