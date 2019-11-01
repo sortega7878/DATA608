@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DATA 608 Homework 5 question 1</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="hw5.css" />
+<script>
+$(document).ready(function(){
+	// quesiton 1:
+	$('#preReverse').keyup(function(){
+		$('#postReverse').val($('#preReverse').val().split("").reverse().join(""));
+	});
+
+	// quesiton 2: build table
+	var multiplier = 1;
+	for(var row=1; row <= 5; row++){
+		$('#numbersTable').append('<tr>');
+		for(var col=1; col <= 5; col++){
+			$('#numbersTable').append('<td id="' + multiplier++ + '" class="numberHolder"></td>');
+		}
+		$('#numbersTable').append('</tr>');
+	}
+
+	// quesiton 2: do the multiples
+	$('#numberToMultiply').keyup(function(){
+		var numberToMultiply = $('#numberToMultiply').val();
+		$('.numberHolder').each(function () {
+			$(this).html($('#numberToMultiply').val() * $(this).attr('id'));
+	    });
+	});
+
+});
+</script>
+</head>
+<body>
+
+<h1>DATA608 Homework 5 question 1</h1>
+
+<h3>Text Reversal</h3>
+
+<div class="labels">Enter Text: </div>
+<input type="text" id="preReverse" size="80" />
+
+<div class="labels">Text Reversed: </div>
+<input type="text" id="postReverse" size="80" readonly="readonly" />
+
+<h3>Numbers Table</h3>
+
+<div class="labels">Enter Number: <input type="text" id="numberToMultiply" size="10" /></div>
+
+<table id="numbersTable">
+</table>
+
+
+</body>
+</html>

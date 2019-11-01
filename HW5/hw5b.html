@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DATA 608 Homework 5 Question 2</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<link rel="stylesheet" type="text/css" href="hw5.css" />
+<script>
+$(document).ready(function(){
+
+	var dfData = "https://raw.githubusercontent.com/sortega7878/DATA608/master/HW5/presidents.csv";
+
+	d3.text(dfData, function(data) {
+		var parsedCSV = d3.csv.parseRows(data);
+
+		d3.select("#presidentsAll")
+			.append("table")
+
+			.selectAll("tr")
+				.data(parsedCSV).enter()
+				.append("tr")
+
+			.selectAll("td")
+				.data(function(d) { return d; }).enter()
+				.append("td")
+				.text(function(d) { return d; });
+	});
+
+	function getPresDetails(){
+		var tableRow = $("td").filter(function() {
+			var rowUpper = $(this).text().toUpperCase();
+			var inputUpper = $("#presidentName").val().toUpperCase();
+			return rowUpper.indexOf(inputUpper) >= 0 && !rowUpper.startsWith("NAME");
+		}).closest("tr");
+
+		var msgHtml = "<table border=1><tr><th>Name</th><th>Height</th><th>Weight</th></tr>";
+
+		tableRow.each(function(){
+			var name = $(this).find('td').eq(0).text();
+			var height = $(this).find('td').eq(1).text();
+			var weight = $(this).find('td').eq(2).text();
+			if(name != "President" && height != "Height" && weight != "Weight"){
+				msgHtml += "<tr><td>" + name + "</td><td>" + height + "</td><td>" + weight + "</td></tr>";
+			}
+		});
+		msgHtml += "</table>";
+		$("#presidentMessage").html(msgHtml);
+		$("#presidentMessage").show();
+	}
+
+	$("#presidentMessage").hide();
+
+	$('#presidentName').keyup(function(){
+		$("#presidentMessage").html("");
+		var presName = $("#presidentName");
+		if(presName && !presName.val().trim() == ""){
+			getPresDetails();
+		}
+	});
+
+});
+
+</script>
+</head>
+<body>
+
+
+<h1>DATA608 Homework 5 question 2</h1>
+<h2>Sergio Ortega</h2>
+
+<h3>Presidents name:</h3>
+
+<div class="labels">Enter President Name</div>
+<input type="text" id="presidentName" />
+
+<h3>Presidents Filter Result:</h3>
+<table>
+<tr>
+	<td id="presidentsAll"></td>
+	<td id="presidentMessage" class="messageBox" valign="top"></td>
+</tr>
+</table>
+
+</body>
+</html>
